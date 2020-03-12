@@ -1,6 +1,6 @@
 <template>
   <div>
-    <h1>GRID</h1>
+    <h1>structured-grid-poc</h1>
     <canvas
         id="c"
         height="700"
@@ -20,9 +20,9 @@ export default {
       return {
         vueCanvas: null,
         part: {
-            x: 300,
+            x: 250,
             y: 300,
-            width: 100,
+            width: 200,
             height: 100,
             dragging: false
         },
@@ -67,13 +67,92 @@ export default {
         this.dragflag = false;
         this.part.dragging = false;
     },
-    draw() {
-      this.vueCanvas.lineWidth = 1;
-      this.vueCanvas.clearRect(0, 0, 700, 700);
+    drawBox(boundingRect, cpx, cpy, dir) {
+        var basex = boundingRect.x + cpx;
+        var basey = boundingRect.y + cpy;
 
-      this.vueCanvas.beginPath();
-      this.vueCanvas.rect(this.part.x, this.part.y, this.part.width, this.part.height);
-      this.vueCanvas.stroke();
+        var dx = 0;
+        var dy = 0;
+
+        if (dir == "east") {
+            dx = basex;
+            dy = basey - 20;
+        }
+        else if (dir == "south") {
+            dx = basex;
+            dy = basey;
+        }
+        else if (dir == "west") {
+            dx = basex;
+            dy = basey;
+        }
+        else if (dir == "north") {
+            dx = basex - 25;
+            dy = basey;
+        }
+
+        this.vueCanvas.fillStyle = '#' + Math.floor(Math.random() * 16777215).toString(16);
+        this.vueCanvas.fillRect(dx, dy, 25, 20);
+    },
+    draw() {
+        console.log("draw()")
+
+        var boundingRect = {
+            x: this.part.x,
+            y: this.part.y,
+            width: this.part.width,
+            height: this.part.height
+        }
+        var cpx = 0;
+        var cpy = 0;
+        var dir = "east";
+        var greenFlag = true;
+
+        this.vueCanvas.lineWidth = 1;
+        this.vueCanvas.clearRect(0, 0, 700, 700);
+
+        this.vueCanvas.beginPath();
+        this.vueCanvas.rect(boundingRect.x, boundingRect.y, boundingRect.width, boundingRect.height);
+        this.vueCanvas.stroke();
+
+        do {
+            this.drawBox(boundingRect, cpx, cpy, dir);
+            if (dir == "east") {
+                if (cpx < boundingRect.width) {
+                    cpx += 25;
+                }
+                else {
+                    dir = "south";
+                }
+            }
+            else if (dir == "south") {
+                if (cpy < boundingRect.height) {
+                    cpy += 20;
+                }
+                else {
+                    dir = "west";
+                }
+            }
+            else if (dir == "west") {
+                if (cpx > 0) {
+                    cpx -= 25;
+                }
+                else {
+                    dir = "north";
+                }
+            }
+            else if (dir == "north") {
+                if (cpy > 0) {
+                    cpy -= 20;
+                }
+                else {
+                    cpy -= 20;
+                    this.drawBox(boundingRect, cpx, cpy, dir);
+                    greenFlag = false;
+                }
+            }
+        }
+        while (greenFlag);
     }
   }
 }
