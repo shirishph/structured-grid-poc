@@ -1,16 +1,19 @@
 <template>
   <div id="app">
     <Grid />
+    <DensityTool />
   </div>
 </template>
 
 <script>
-import Grid from './components/Grid.vue'
+import Grid from './components/Grid.vue';
+import DensityTool from './components/DensityTool.vue';
 
 export default {
   name: 'App',
   components: {
-    Grid
+    Grid,
+    DensityTool
   }
 }
 </script>

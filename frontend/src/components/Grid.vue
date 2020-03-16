@@ -1,14 +1,16 @@
 <template>
   <div>
     <h1>structured-grid-poc</h1>
+    <button v-on:click="onExport">Export</button>
+    <button v-on:click="onReset">Reset</button>
     <canvas
         id="c"
-        height="700"
-        width="700"
+        width="500"
+        height="500"
         v-on:mousedown="onTapDown"
         v-on:mouseup="onTapUp"
         v-on:mousemove="onTapMove"
-        style="background-color:lightblue;display: table;margin-right: auto;margin-left: auto;border: 1px solid gray;">
+        style="background-color:midnightblue;display: table;margin-right: auto;margin-left: auto;border: 1px solid gray;">
     </canvas>
   </div>
 </template>
@@ -17,28 +19,66 @@
 export default {
   name: 'Grid',
   data() {
+      console.log("data--")
       return {
         vueCanvas: null,
-        part: {
-            x: 250,
-            y: 300,
-            width: 200,
-            height: 100,
-            dragging: false
-        },
+        part: {},
+        quad_cell_width: 0,
+        quad_cell_height: 0,
+        quadsList: [],
         dragflag: false,
         dragstartx: 0,
         dragstarty: 0
       }
   },
+  created() {
+    console.log("created--");
+
+    // Constants init
+    this.TEXT_COLUMN_OFFSET = 5;
+    this.TEXT_ROW_OFFSET = 10;
+    this.VIEWPORT_WIDTH = 500;
+    this.VIEWPORT_HEIGHT = 500;
+    this.PART_WIDTH = 200;
+    this.PART_HEIGHT = 100;
+    this.PART_DEFAULT_X = (this.VIEWPORT_WIDTH / 2) - (this.PART_WIDTH / 2);
+    this.PART_DEFAULT_Y = (this.VIEWPORT_HEIGHT / 2) - (this.PART_HEIGHT / 2);
+
+    // Reactive var init
+    this.part = {
+        x: this.PART_DEFAULT_X,
+        y: this.PART_DEFAULT_Y,
+        width: this.PART_WIDTH,
+        height: this.PART_HEIGHT,
+        dragging: false
+    };
+  },
   mounted() {
-      console.log("mounted--")
-      var c = document.getElementById("c");
-      var ctx = c.getContext("2d");    
-      this.vueCanvas = ctx;
-      this.draw();
+      console.log("mounted--");
+      this.quad_cell_width = this.PART_WIDTH / 8;
+      this.quad_cell_height = this.PART_HEIGHT / 5;
+      this.vueCanvas = document.getElementById("c").getContext("2d");
+      this.computeQuads();
+      this.refresh();
   },
   methods: {
+    onReset() {
+        console.log("onReset");
+        this.part.x = this.PART_DEFAULT_X;
+        this.part.y = this.PART_DEFAULT_Y;
+        this.part.width = this.PART_WIDTH;
+        this.part.height = this.PART_HEIGHT;
+        this.part.dragging = false;
+        this.computeQuads();
+        this.refresh();
+    },
+    onExport() {
+        console.log("onExport");
+        this.quadsList.forEach((element, index) => {
+            console.log(index, JSON.stringify(element))
+        });
+
+    },
     onTapDown(e) {
         if((e.offsetX > this.part.x) && (e.offsetX < (this.part.x + this.part.width)) && (e.offsetY > this.part.y) && (e.offsetY < (this.part.y + this.part.height))) {
             this.dragflag = true;
@@ -57,7 +97,8 @@ export default {
                 this.part.y += dy;
             }
 
-            this.draw();
+            this.computeQuads();
+            this.refresh();
 
             this.dragstartx = e.offsetX;
             this.dragstarty = e.offsetY;
@@ -76,7 +117,7 @@ export default {
 
         if (dir == "east") {
             dx = basex;
-            dy = basey - 20;
+            dy = basey - this.quad_cell_height;
         }
         else if (dir == "south") {
             dx = basex;
@@ -87,15 +128,15 @@ export default {
             dy = basey;
         }
         else if (dir == "north") {
-            dx = basex - 25;
+            dx = basex - this.quad_cell_width;
             dy = basey;
         }
 
         this.vueCanvas.fillStyle = '#' + Math.floor(Math.random() * 16777215).toString(16);
-        this.vueCanvas.fillRect(dx, dy, 25, 20);
+        this.vueCanvas.fillRect(dx, dy, this.quad_cell_width, this.quad_cell_height);
     },
-    draw() {
-        console.log("draw()")
+    computeQuads() {
+        console.log("computeQuads()")
 
         var boundingRect = {
             x: this.part.x,
@@ -103,23 +144,24 @@ export default {
             width: this.part.width,
             height: this.part.height
         }
+
+        this.quadsList = []
+
         var cpx = 0;
         var cpy = 0;
         var dir = "east";
         var greenFlag = true;
 
-        this.vueCanvas.lineWidth = 1;
-        this.vueCanvas.clearRect(0, 0, 700, 700);
-
-        this.vueCanvas.beginPath();
-        this.vueCanvas.rect(boundingRect.x, boundingRect.y, boundingRect.width, boundingRect.height);
-        this.vueCanvas.stroke();
-
         do {
-            this.drawBox(boundingRect, cpx, cpy, dir);
+            this.quadsList.push({
+                boundingRect: boundingRect,
+                cpx: cpx,
+                cpy: cpy,
+                dir: dir
+            });
             if (dir == "east") {
                 if (cpx < boundingRect.width) {
-                    cpx += 25;
+                    cpx += this.quad_cell_width;
                 }
                 else {
                     dir = "south";
@@ -127,7 +169,7 @@ export default {
             }
             else if (dir == "south") {
                 if (cpy < boundingRect.height) {
-                    cpy += 20;
+                    cpy += this.quad_cell_height;
                 }
                 else {
                     dir = "west";
@@ -135,7 +177,7 @@ export default {
             }
             else if (dir == "west") {
                 if (cpx > 0) {
-                    cpx -= 25;
+                    cpx -= this.quad_cell_width;
                 }
                 else {
                     dir = "north";
@@ -143,16 +185,50 @@ export default {
             }
             else if (dir == "north") {
                 if (cpy > 0) {
-                    cpy -= 20;
+                    cpy -= this.quad_cell_height;
                 }
                 else {
-                    cpy -= 20;
-                    this.drawBox(boundingRect, cpx, cpy, dir);
+                    cpy -= this.quad_cell_height;
+                    this.quadsList.push({
+                        boundingRect: boundingRect,
+                        cpx: cpx,
+                        cpy: cpy,
+                        dir: dir
+                    });
                     greenFlag = false;
                 }
             }
         }
         while (greenFlag);
+    },
+    refresh() {
+        console.log("refresh()")
+
+        var boundingRect = {
+            x: this.part.x,
+            y: this.part.y,
+            width: this.part.width,
+            height: this.part.height
+        }
+
+        this.vueCanvas.lineWidth = 1;
+        this.vueCanvas.clearRect(0, 0, this.VIEWPORT_WIDTH, this.VIEWPORT_HEIGHT);
+
+        this.vueCanvas.fillStyle = 'lightgrey';
+        this.vueCanvas.beginPath();
+        this.vueCanvas.fillRect(boundingRect.x, boundingRect.y, boundingRect.width, boundingRect.height);
+        this.vueCanvas.stroke();
+
+        this.vueCanvas.fillStyle = 'darkslategrey';
+        var row = boundingRect.y;
+        this.vueCanvas.fillText("PART DIM, " + "x: " + boundingRect.x + ", y: " + boundingRect.y + ", w: " + boundingRect.width + ", h: " + boundingRect.height, boundingRect.x + this.TEXT_COLUMN_OFFSET, row += this.TEXT_ROW_OFFSET)
+        this.vueCanvas.fillText("T QUADS/BASE LAYER: " + this.quadsList.length, boundingRect.x + this.TEXT_COLUMN_OFFSET, row += this.TEXT_ROW_OFFSET)
+
+        this.vueCanvas.globalAlpha = 0.5;
+        this.quadsList.forEach(element => {
+            this.drawBox(element.boundingRect, element.cpx, element.cpy, element.dir);
+        });
+        this.vueCanvas.globalAlpha = 1.0;
     }
   }
 }
