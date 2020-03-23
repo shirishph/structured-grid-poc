@@ -60,7 +60,7 @@ export default {
         },
         reset() {
             this.CIRCLE_RADIUS = 7;
-            this.TOTAL_GRADATIONS = 10;
+            this.TOTAL_GRADATIONS = 20;
             this.TEXT_COLUMN_OFFSET = 5;
             this.TEXT_ROW_OFFSET = 10;
 
@@ -77,7 +77,7 @@ export default {
                 width: this.PART_WIDTH,
                 height: this.PART_HEIGHT
             };
-            this.draggables.push({obj: this.part, type: "square", dragging: false});
+            // this.draggables.push({obj: this.part, type: "square", dragging: false});
 
             this.north_cp1 = {
                 x: this.part.x + (this.PART_WIDTH / 4),
@@ -209,6 +209,7 @@ export default {
         computeQuads() {
             console.log("computeQuads()")
 
+            // Horizontal Gradations
             var start_x = this.part.x;
             var start_y = this.part.y;
             var end_x = this.part.x + this.part.width;
@@ -216,7 +217,7 @@ export default {
 
             var i = 0;
             var res = {};
-            this.hgradations = []
+            this.hgradations = [];
             for (i = 0; i < this.TOTAL_GRADATIONS; i++) {
                 res = this.getBezierXY(
                     i / this.TOTAL_GRADATIONS,
@@ -233,6 +234,7 @@ export default {
                 }
             }
 
+            // Vertical Gradations
             start_x = this.part.x + this.part.width;
             start_y = this.part.y;
             end_x = this.part.x + this.part.width;
@@ -255,46 +257,208 @@ export default {
                 }
             }
 
+            this.quadsList = [];
+            var cell_height = this.part.height / 10;
+
+            // North Sector
+            var cpx = this.part.x;
+            var cpy = this.part.y - cell_height;
+            var greenFlag = true;
+
+            do {
+                for(i=0;i<=this.hgradations.length;i++) {
+                    this.quadsList.push({
+                        x: cpx,
+                        y: cpy,
+                        width: (i < this.hgradations.length)?(this.hgradations[i] - cpx):((this.part.x + this.part.width) - cpx),
+                        height: cell_height
+                    });
+                    cpx = this.hgradations[i];
+                }
+                cpx = this.part.x;
+                cpy -= cell_height;
+                if(cpy < 0) {
+                    greenFlag = false;
+                }
+            } while(greenFlag);
+
+            // North-east Sector
+            cpx = this.part.x + this.part.width;
+            cpy = this.part.y - cell_height;
+            greenFlag = true;
+            var redFlag = true;
+
+            do {
+                redFlag = true;
+                do {
+                    this.quadsList.push({
+                        x: cpx,
+                        y: cpy,
+                        width: cell_height,
+                        height: cell_height
+                    });
+                    cpx += cell_height;
+                    if(cpx > this.VIEWPORT_WIDTH) {
+                        redFlag = false;
+                    }
+                } while(redFlag);
+                cpx = this.part.x + this.part.width;
+                cpy -= cell_height;
+                if(cpy < 0) {
+                    greenFlag = false;
+                }
+            } while(greenFlag);
+
+            // East Sector
+            cpx = this.part.x + this.part.width;
+            cpy = this.part.y;
+            greenFlag = true;
+
+            do {
+                for(i=0;i<=this.vgradations.length;i++) {
+                    this.quadsList.push({
+                        x: cpx,
+                        y: cpy,
+                        width: cell_height,
+                        height: (i < this.vgradations.length)?(this.vgradations[i] - cpy):((this.part.y + this.part.height) - cpy)
+                    });
+                    cpy = this.vgradations[i];
+                }
+                cpx += cell_height;
+                cpy = this.part.y;
+                console.log("cpx", cpx, ", this.part.VIEWPORT_WIDTH", this.part.VIEWPORT_WIDTH)
+                if(cpx > this.VIEWPORT_WIDTH) {
+                   greenFlag = false;
+                }
+            } while(greenFlag);
+
+            // South-east Sector
+            cpx = this.part.x + this.part.width;
+            cpy = this.part.y + this.part.height;
+            greenFlag = true;
+            redFlag = true;
+
+            do {
+                redFlag = true;
+                do {
+                    this.quadsList.push({
+                        x: cpx,
+                        y: cpy,
+                        width: cell_height,
+                        height: cell_height
+                    });
+                    cpx += cell_height;
+                    if(cpx > this.VIEWPORT_WIDTH) {
+                        redFlag = false;
+                    }
+                } while(redFlag);
+                cpx = this.part.x + this.part.width;
+                cpy += cell_height;
+                if(cpy > this.VIEWPORT_HEIGHT) {
+                    greenFlag = false;
+                }
+            } while(greenFlag);
+
+            // South Sector
+            cpx = this.part.x;
+            cpy = this.part.y + this.part.height;
+            greenFlag = true;
+
+            do {
+                for(i=0;i<=this.hgradations.length;i++) {
+                    this.quadsList.push({
+                        x: cpx,
+                        y: cpy,
+                        width: (i < this.hgradations.length)?(this.hgradations[i] - cpx):((this.part.x + this.part.width) - cpx),
+                        height: cell_height
+                    });
+                    cpx = this.hgradations[i];
+                }
+                cpx = this.part.x;
+                cpy += cell_height;
+                if(cpy > this.VIEWPORT_HEIGHT) {
+                    greenFlag = false;
+                }
+            } while(greenFlag);
+
+            // South-west Sector
+            cpx = this.part.x - cell_height;
+            cpy = this.part.y + this.part.height;
+            greenFlag = true;
+            redFlag = true;
+
+            do {
+                redFlag = true;
+                do {
+                    this.quadsList.push({
+                        x: cpx,
+                        y: cpy,
+                        width: cell_height,
+                        height: cell_height
+                    });
+                    cpx -= cell_height;
+                    if(cpx < 0) {
+                        redFlag = false;
+                    }
+                } while(redFlag);
+                cpx = this.part.x - cell_height;
+                cpy += cell_height;
+                if(cpy > this.VIEWPORT_HEIGHT) {
+                    greenFlag = false;
+                }
+            } while(greenFlag);
+
+            // West Sector
+            cpx = this.part.x - cell_height;
+            cpy = this.part.y;
+            greenFlag = true;
+
+            do {
+                for(i=0;i<=this.vgradations.length;i++) {
+                    this.quadsList.push({
+                        x: cpx,
+                        y: cpy,
+                        width: cell_height,
+                        height: (i < this.vgradations.length)?(this.vgradations[i] - cpy):((this.part.y + this.part.height) - cpy)
+                    });
+                    cpy = this.vgradations[i];
+                }
+                cpx -= cell_height;
+                cpy = this.part.y;
+                if(cpx < 0) {
+                   greenFlag = false;
+                }
+            } while(greenFlag);
+
+            // North-west Sector
+            cpx = this.part.x - cell_height;
+            cpy = this.part.y - cell_height;
+            greenFlag = true;
+            redFlag = true;
+
+            do {
+                redFlag = true;
+                do {
+                    this.quadsList.push({
+                        x: cpx,
+                        y: cpy,
+                        width: cell_height,
+                        height: cell_height
+                    });
+                    cpx -= cell_height;
+                    if(cpx < 0) {
+                        redFlag = false;
+                    }
+                } while(redFlag);
+                cpx = this.part.x - cell_height;
+                cpy -= cell_height;
+                if(cpy < 0) {
+                    greenFlag = false;
+                }
+            } while(greenFlag);
+
             console.log("hgradations", this.hgradations);
             console.log("vgradations", this.vgradations);
-
-            this.quadsList = []
-            var cell_height = this.part.height / 10;
-            console.log("cell_height", cell_height);
-
-            start_x = this.part.x;
-            for (i = 0; i < this.hgradations.length; i++) {
-                this.quadsList.push({
-                    x: start_x,
-                    y: this.part.y - cell_height,
-                    width: this.hgradations[i] - start_x,
-                    height: cell_height
-                });
-                start_x = this.hgradations[i];
-            }
-            this.quadsList.push({
-                x: start_x,
-                y: this.part.y - cell_height,
-                width: (this.part.x + this.part.width) - start_x,
-                height: cell_height
-            });
-
-            start_y = this.part.y;
-            for (i = 0; i < this.vgradations.length; i++) {
-                this.quadsList.push({
-                    x: this.part.x + this.part.width,
-                    y: start_y,
-                    width: cell_height,
-                    height: this.vgradations[i] - start_y
-                });
-                start_y = this.vgradations[i];
-            }
-            this.quadsList.push({
-                x: this.part.x + this.part.width,
-                y: start_y,
-                width: cell_height,
-                height: (this.part.y + this.part.height) - start_y
-            });
         },
         refresh() {
             console.log("-refresh-");
@@ -312,6 +476,7 @@ export default {
             var end_x = this.part.x + this.part.width;
             var end_y = this.part.y;
 
+            // North
             this.drawLine(start_x, start_y, end_x, end_y, 'black');
 
             this.drawCircle(start_x, start_y, 'black');
@@ -361,6 +526,8 @@ export default {
             end_x = this.part.x + this.part.width;
             end_y = this.part.y + this.part.height;
 
+
+            // East
             this.drawLine(start_x, start_y, end_x, end_y, 'black');
 
             this.drawCircle(start_x, start_y, 'black');
@@ -401,6 +568,7 @@ export default {
                 this.canvas.fillText(perc.toFixed(2), res.x, res.y - 5);
             }
 
+            // Text
             this.canvas.fillStyle = 'darkslategrey';
             var row = this.part.y + 10;
             this.canvas.fillText(
@@ -411,6 +579,7 @@ export default {
                 this.part.x + this.TEXT_COLUMN_OFFSET,
                 row += this.TEXT_ROW_OFFSET);
 
+            // Quad fill render
             this.canvas.fillStyle = 'white';
             this.canvas.globalAlpha = 0.25;
             this.quadsList.forEach(element => {
@@ -429,6 +598,7 @@ export default {
             });
             this.canvas.globalAlpha = 1.0;
 
+            // Markers
             if (this.showStars) {
                 for (i = 0; i < this.hgradations.length; i++) {
                     this.drawStar(this.hgradations[i], this.part.y - 10, 5, 3, 2);
